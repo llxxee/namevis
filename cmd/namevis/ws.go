@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/10th-ndn-hackathon/namevis/ndnparse"
 	"github.com/10th-ndn-hackathon/namevis/pcapinput"
@@ -15,6 +17,8 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
+
+const pingInterval = 5 * time.Second
 
 func handleWs(cfg pcapinput.Config, w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -31,15 +35,48 @@ func handleWs(cfg pcapinput.Config, w http.ResponseWriter, r *http.Request) {
 	if e != nil {
 		return
 	}
+	defer conn.Close()
+
+	var lastPing time.Time
+	lastPong := time.Now()
+	conn.SetPongHandler(func(string) error {
+		log.Print("pong")
+		lastPong = time.Now()
+		return nil
+	})
+
+	go func() {
+		for {
+			_, _, e := conn.ReadMessage()
+			if e != nil {
+				log.Print(e)
+				return
+			}
+		}
+	}()
+
+	pingTicker := time.NewTicker(pingInterval)
+	defer pingTicker.Stop()
 
 	parsed := ndnparse.Parse(ctx, source)
-	for packet := range parsed {
-		e = conn.WriteJSON(packet)
-		if e != nil {
-			break
+	for {
+		select {
+		case packet, ok := <-parsed:
+			if !ok {
+				return
+			}
+			log.Print(packet)
+			conn.WriteJSON(packet)
+		case t := <-pingTicker.C:
+			if lastPong.Before(lastPing) {
+				log.Print("disconnect")
+				return
+			}
+			conn.WriteMessage(websocket.PingMessage, []byte{0x20})
+			lastPing = t
+			log.Print("ping")
 		}
 	}
-	conn.Close()
 }
 
 func init() {

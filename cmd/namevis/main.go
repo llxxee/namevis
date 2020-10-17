@@ -38,6 +38,7 @@ func init() {
 		list := pcapinput.ListDevices()
 		j, _ := json.Marshal(list)
 
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(j)
