@@ -1,3 +1,4 @@
+// Command namevis runs a WebSocket server that streams captured NDN packet names.
 package main
 
 import (
