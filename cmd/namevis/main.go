@@ -1,44 +1,30 @@
 package main
 
 import (
-	"context"
-	"fmt"
+	"encoding/json"
 	"log"
+	"net/http"
 	"os"
 
-	"github.com/10th-ndn-hackathon/namevis/ndnparse"
 	"github.com/10th-ndn-hackathon/namevis/pcapinput"
 	"github.com/urfave/cli/v2"
 )
 
-var (
-	pcapinputConfig pcapinput.Config
-)
-
 func main() {
+	var httpListen string
 	app := &cli.App{
 		Name: "namevis",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:        "device",
-				Aliases:     []string{"i"},
-				Usage:       "network device name for live capture",
-				Destination: &pcapinputConfig.Device,
-			},
-			&cli.IntFlag{
-				Name:        "snaplen",
-				Aliases:     []string{"s"},
-				Usage:       "capture length for live capture",
-				Destination: &pcapinputConfig.SnapLen,
-			},
-			&cli.StringFlag{
-				Name:        "filename",
-				Aliases:     []string{"r"},
-				Usage:       "PCAP filename",
-				Destination: &pcapinputConfig.Filename,
+				Name:        "http",
+				Usage:       "HTTP listen endpoint",
+				Value:       "127.0.0.1:6847", // NVIS=6847
+				Destination: &httpListen,
 			},
 		},
-		Action: appMain,
+		Action: func(c *cli.Context) error {
+			return http.ListenAndServe(httpListen, nil)
+		},
 	}
 	e := app.Run(os.Args)
 	if e != nil {
@@ -46,19 +32,13 @@ func main() {
 	}
 }
 
-func appMain(c *cli.Context) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+func init() {
+	http.HandleFunc("/devices.json", func(w http.ResponseWriter, r *http.Request) {
+		list := pcapinput.ListDevices()
+		j, _ := json.Marshal(list)
 
-	source, e := pcapinput.Open(ctx, pcapinputConfig)
-	if e != nil {
-		return e
-	}
-
-	parsed := ndnparse.Parse(ctx, source)
-
-	for packet := range parsed {
-		fmt.Println(packet)
-	}
-	return nil
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(j)
+	})
 }
