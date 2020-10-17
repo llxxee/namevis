@@ -1,0 +1,34 @@
+---
+name: build
+"on":
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: "^1.15"
+      - name: install APT dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install libpcap-dev
+      - uses: actions/checkout@v2
+      - name: build for Linux
+        run: |
+          go build ./cmd/namevis
+        env:
+          GOOS: linux
+      - name: build for Windows
+        run: |
+          go build ./cmd/namevis
+        env:
+          GOOS: windows
+      - uses: actions/upload-artifact@v2
+        with:
+          name: namevis
+          path: |
+            namevis
+            namevis.exe
