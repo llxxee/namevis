@@ -2,12 +2,10 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 
-	"github.com/10th-ndn-hackathon/namevis/pcapinput"
 	"github.com/urfave/cli/v2"
 )
 
@@ -31,16 +29,4 @@ func main() {
 	if e != nil {
 		log.Fatal(e)
 	}
-}
-
-func init() {
-	http.HandleFunc("/devices.json", func(w http.ResponseWriter, r *http.Request) {
-		list := pcapinput.ListDevices()
-		j, _ := json.Marshal(list)
-
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(j)
-	})
 }

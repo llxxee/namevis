@@ -34,6 +34,17 @@ Example:
 ]
 ```
 
+`GET /files.json` returns a JSON document describing PCAP files in the current working directory.
+The response is an array, in which each item is a file name.
+Example:
+
+```json
+[
+  "1.pcap",
+  "2.pcap"
+]
+```
+
 `new WebSocket("http://127.0.0.1:6847/live.websocket?device=eth1")` starts a live capture session on "eth1" interface.
 Each message represents a captured NDN packet.
 Example:
@@ -45,3 +56,6 @@ Example:
   "type": "I"                // I for Interest, D for Data
 }
 ```
+
+`new WebSocket("http://127.0.0.1:6847/file.websocket?filename=1.pcap")` reads from the specified file.
+Message format is same as live capture session.
