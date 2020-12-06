@@ -18,6 +18,8 @@ type Packet struct {
 	Timestamp int64    `json:"timestamp"`
 	Name      ndn.Name `json:"name"`
 	Type      string   `json:"type"`
+	Signer    ndn.Name `json:"signer"`
+	Count     int      `json:"count"`
 }
 
 // Parse parses NDN packets.
@@ -53,16 +55,28 @@ func parseLoop(ctx context.Context, source gopacket.PacketDataSource, output cha
 
 		switch {
 		case packet.Interest != nil:
+			var signer ndn.Name
+			if packet.Interest.SigInfo != nil {
+				signer = packet.Interest.SigInfo.KeyLocator.Name
+			}
 			output <- Packet{
 				Timestamp: timestamp,
 				Name:      packet.Interest.Name,
 				Type:      "I",
+				Signer:    signer,
+				Count:     1,
 			}
 		case packet.Data != nil:
+			var signer ndn.Name
+			if packet.Data.SigInfo != nil {
+				signer = packet.Data.SigInfo.KeyLocator.Name
+			}
 			output <- Packet{
 				Timestamp: timestamp,
 				Name:      packet.Data.Name,
 				Type:      "D",
+				Signer:    signer,
+				Count:     1,
 			}
 		}
 	}
