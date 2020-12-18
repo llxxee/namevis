@@ -1,7 +1,7 @@
 # NDN Passive Name Visualizer
 
 This repository is the server component of NDN Passive Name Visualizer.
-It is meant to be used with the [web application](https://github.com/10th-ndn-hackathon/namevis-web).
+It is meant to be used with the [web application](https://github.com/llxxee/namevis-web).
 
 ## Installation
 
